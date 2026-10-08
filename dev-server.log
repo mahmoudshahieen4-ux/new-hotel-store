@@ -1,0 +1,145 @@
+
+> next-store@1.0.1 dev
+> next dev
+
+  ▲ Next.js 14.2.35
+  - Local:        http://localhost:3000
+  - Environments: .env.local, .env
+
+ ✓ Starting...
+ ✓ Ready in 3.1s
+ ○ Compiling /middleware ...
+ ✓ Compiled /middleware in 2s (199 modules)
+ ○ Compiling / ...
+ ✓ Compiled / in 11.6s (1184 modules)
+ ✓ Compiled in 941ms (410 modules)
+ ✓ Compiled in 110ms (396 modules)
+ GET / 200 in 21914ms
+ GET / 200 in 266ms
+ ✓ Compiled in 587ms (410 modules)
+ ✓ Compiled in 299ms (410 modules)
+ ✓ Compiled in 358ms (410 modules)
+ ✓ Compiled in 227ms (410 modules)
+ ✓ Compiled in 327ms (410 modules)
+ ✓ Compiled in 317ms (410 modules)
+ ✓ Compiled in 402ms (410 modules)
+ ✓ Compiled in 385ms (410 modules)
+ ✓ Compiled in 248ms (410 modules)
+ ✓ Compiled in 204ms (410 modules)
+ ✓ Compiled in 182ms (410 modules)
+ ✓ Compiled in 358ms (410 modules)
+ ✓ Compiled in 320ms (410 modules)
+ ✓ Compiled in 262ms (410 modules)
+ ✓ Compiled in 225ms (410 modules)
+ ✓ Compiled in 199ms (410 modules)
+ ✓ Compiled in 493ms (410 modules)
+ ✓ Compiled in 172ms (410 modules)
+ ✓ Compiled in 326ms (410 modules)
+ ✓ Compiled in 318ms (410 modules)
+ ✓ Compiled in 381ms (410 modules)
+ ✓ Compiled in 296ms (410 modules)
+ ✓ Compiled in 423ms (410 modules)
+ ✓ Compiled in 369ms (410 modules)
+ ✓ Compiled in 241ms (410 modules)
+ ✓ Compiled in 366ms (410 modules)
+ ✓ Compiled in 286ms (410 modules)
+ ✓ Compiled in 265ms (410 modules)
+ ✓ Compiled in 322ms (410 modules)
+ ✓ Compiled in 184ms (410 modules)
+ ✓ Compiled in 341ms (410 modules)
+ ✓ Compiled in 226ms (410 modules)
+ ✓ Compiled in 350ms (410 modules)
+ ✓ Compiled in 364ms (410 modules)
+ ✓ Compiled in 457ms (410 modules)
+ ✓ Compiled in 322ms (410 modules)
+ ✓ Compiled in 266ms (410 modules)
+ ✓ Compiled in 487ms (410 modules)
+ ✓ Compiled in 339ms (410 modules)
+ ○ Compiling /sign-in/[[...sign-in]] ...
+ ✓ Compiled /sign-in/[[...sign-in]] in 2.9s (1142 modules)
+ OPTIONS /sign-in?callbackUrl=http%3A%2F%2Flocalhost%3A3000%2Forders 200 in 4749ms
+ GET /sign-in?callbackUrl=http%3A%2F%2Flocalhost%3A3000%2Forders 200 in 80ms
+ ✓ Compiled /_not-found in 458ms (1145 modules)
+ GET /.well-known/appspecific/com.chrome.devtools.json 404 in 976ms
+ ✓ Compiled /api/auth/[...nextauth] in 489ms (770 modules)
+ ✓ Compiled (772 modules)
+ GET /favicon.ico 200 in 830ms
+ GET /favicon.ico 200 in 25ms
+ GET /api/auth/session 200 in 1441ms
+ GET /api/auth/session 200 in 30ms
+ GET /api/auth/session 200 in 12ms
+ GET /api/auth/session 200 in 14ms
+ ○ Compiling / ...
+ ✓ Compiled / in 2.2s (810 modules)
+ GET /?_rsc=1p60s 200 in 5432ms
+ ✓ Compiled in 912ms (1194 modules)
+ ✓ Compiled in 682ms (1194 modules)
+ ✓ Compiled in 397ms (1194 modules)
+ GET /?_rsc=1p60s 200 in 2615ms
+ GET /?_rsc=1p60s 200 in 9116ms
+ ✓ Compiled in 538ms (1194 modules)
+ GET /?_rsc=1p60s 200 in 242ms
+ ✓ Compiled in 649ms (1194 modules)
+ GET /?_rsc=1p60s 200 in 1280ms
+ ✓ Compiled in 776ms (1194 modules)
+ ✓ Compiled in 524ms (1194 modules)
+ GET /?_rsc=1p60s 200 in 3650ms
+ GET /?_rsc=1p60s 200 in 11316ms
+ ✓ Compiled in 773ms (1194 modules)
+ GET /?_rsc=1p60s 200 in 223ms
+ ✓ Compiled in 587ms (1194 modules)
+ GET /?_rsc=1p60s 200 in 198ms
+ ✓ Compiled in 672ms (1194 modules)
+ GET /?_rsc=1p60s 200 in 285ms
+ ✓ Compiled in 588ms (1194 modules)
+ GET /?_rsc=1p60s 200 in 359ms
+ ✓ Compiled in 550ms (1194 modules)
+ GET /?_rsc=1p60s 200 in 647ms
+ ✓ Compiled in 527ms (1194 modules)
+ GET /?_rsc=1p60s 200 in 360ms
+ ✓ Compiled in 599ms (1194 modules)
+ GET /?_rsc=1p60s 200 in 215ms
+ ✓ Compiled in 659ms (1194 modules)
+ GET /?_rsc=1p60s 200 in 261ms
+ ✓ Compiled in 952ms (1194 modules)
+ GET /?_rsc=1p60s 200 in 222ms
+ ✓ Compiled in 763ms (1194 modules)
+ GET /?_rsc=1p60s 200 in 781ms
+ ✓ Compiled in 737ms (1194 modules)
+ GET /?_rsc=1p60s 200 in 371ms
+ ✓ Compiled in 515ms (1194 modules)
+ GET /?_rsc=1p60s 200 in 215ms
+ ✓ Compiled in 865ms (1194 modules)
+ GET /?_rsc=1p60s 200 in 843ms
+ ✓ Compiled in 579ms (1194 modules)
+ GET /?_rsc=1p60s 200 in 321ms
+ ✓ Compiled in 506ms (1194 modules)
+ GET /?_rsc=1p60s 200 in 269ms
+ ○ Compiling /_not-found ...
+ ✓ Compiled /_not-found in 637ms (1183 modules)
+ GET /.well-known/appspecific/com.chrome.devtools.json 404 in 1341ms
+ GET /?_rsc=1p60s 200 in 9023ms
+ ✓ Compiled in 900ms (1194 modules)
+ GET /?_rsc=1p60s 200 in 2732ms
+ ✓ Compiled in 390ms (1194 modules)
+ GET /?_rsc=1p60s 200 in 288ms
+ ✓ Compiled in 323ms (1194 modules)
+ GET /?_rsc=1p60s 200 in 255ms
+ ✓ Compiled in 312ms (1194 modules)
+ GET /?_rsc=1p60s 200 in 417ms
+ ✓ Compiled in 500ms (1194 modules)
+ GET /?_rsc=1p60s 200 in 360ms
+ ✓ Compiled in 494ms (1194 modules)
+ GET /?_rsc=1p60s 200 in 1145ms
+ ✓ Compiled in 1102ms (1194 modules)
+ GET /?_rsc=1p60s 200 in 1123ms
+ ✓ Compiled in 820ms (1194 modules)
+ GET /?_rsc=1p60s 200 in 3776ms
+ ✓ Compiled in 1370ms (1194 modules)
+ ✓ Compiled in 296ms (418 modules)
+ GET /?_rsc=1p60s 200 in 822ms
+ GET /?_rsc=1p60s 200 in 3798ms
+ ✓ Compiled in 591ms (1194 modules)
+ GET /?_rsc=1p60s 200 in 362ms
+ ✓ Compiled in 478ms (1194 modules)
+ GET /?_rsc=1p60s 200 in 1092ms
