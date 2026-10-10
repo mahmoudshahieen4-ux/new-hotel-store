@@ -13,7 +13,7 @@ GROUP BY m."targetCartId", ci."productId";
 
 DELETE FROM "CartItem" ci USING "CartMerge" m WHERE ci."cartId" = m."duplicateCartId";
 DELETE FROM "Cart" c USING "CartMerge" m
-WHERE c."id" = m."duplicateCartId" AND c."duplicateCartId" <> m."targetCartId";
+WHERE c."id" = m."duplicateCartId" AND m."duplicateCartId" <> m."targetCartId";
 
 INSERT INTO "CartItem" ("id", "productId", "cartId", "amount", "createdAt", "updatedAt")
 SELECT 'merge-' || md5(i."cartId" || ':' || i."productId"), i."productId", i."cartId", i."amount", i."createdAt", CURRENT_TIMESTAMP
