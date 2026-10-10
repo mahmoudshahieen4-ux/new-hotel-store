@@ -16,8 +16,9 @@ import { IconButton } from '@/components/form/Buttons';
 import FormContainer from '@/components/form/FormContainer';
 import PaginationContainer from '@/components/global/PaginationContainer';
 
-async function AdminProductsPage({ searchParams }: { searchParams?: { page?: string } }) {
-  const page = Math.max(1, Number(searchParams?.page) || 1);
+async function AdminProductsPage({ searchParams }: { searchParams?: Promise<{ page?: string }> }) {
+  const resolved = await searchParams;
+  const page = Math.max(1, Number(resolved?.page) || 1);
   const { products: items, total, totalPages } = await fetchAdminProducts(page);
   if (total === 0) return <EmptyList />;
 

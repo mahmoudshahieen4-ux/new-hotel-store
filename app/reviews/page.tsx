@@ -5,8 +5,9 @@ import FormContainer from '@/components/form/FormContainer';
 import { IconButton } from '@/components/form/Buttons';
 import PaginationContainer from '@/components/global/PaginationContainer';
 
-async function ReviewsPage({ searchParams }: { searchParams?: { page?: string } }) {
-  const page = Math.min(100000, Math.max(1, Number(searchParams?.page) || 1));
+async function ReviewsPage({ searchParams }: { searchParams?: Promise<{ page?: string }> }) {
+  const resolved = await searchParams;
+  const page = Math.min(100000, Math.max(1, Number(resolved?.page) || 1));
   const { reviews, total, totalPages } = await fetchProductReviewsByUser(page);
   if (total === 0) {
     return <SectionTitle text='you have no reviews yet' />;

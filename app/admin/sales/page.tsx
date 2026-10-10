@@ -13,8 +13,9 @@ import { fetchAdminOrders } from '@/utils/actions';
 import { formatCurrency, formatDate } from '@/utils/format';
 import PaginationContainer from '@/components/global/PaginationContainer';
 
-async function SalesPage({ searchParams }: { searchParams?: { page?: string } }) {
-  const page = Math.max(1, Number(searchParams?.page) || 1);
+async function SalesPage({ searchParams }: { searchParams?: Promise<{ page?: string }> }) {
+  const resolved = await searchParams;
+  const page = Math.max(1, Number(resolved?.page) || 1);
   const { orders, total, totalPages } = await fetchAdminOrders(page);
 
   return (

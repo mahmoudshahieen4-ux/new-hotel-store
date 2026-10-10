@@ -1,0 +1,67 @@
+
+> next-store@1.0.1 build
+> npx prisma generate && next build
+
+Environment variables loaded from .env
+Prisma schema loaded from prisma\schema.prisma
+
+✔ Generated Prisma Client (v5.22.0) to .\node_modules\@prisma\client in 167ms
+
+Start by importing your Prisma Client (See: https://pris.ly/d/importing-client)
+
+Tip: Want to turn off tips and other hints? https://pris.ly/tip-4-nohints
+
+▲ Next.js 16.4.0 (Turbopack)
+- Environments: .env.local, .env
+✓ Running next.config.mjs took 73ms
+
+  Creating an optimized production build ...
+✓ Compiled successfully in 1905ms
+  Running TypeScript ...
+
+  We detected TypeScript in your project and reconfigured your tsconfig.json file for you.
+  The following suggested values were added to your tsconfig.json. These values can be changed to fit your project's needs:
+
+  	- include was updated to add '.next/dev/types/**/*.ts'
+
+  Finished TypeScript in 5.7s ...
+  Collecting page data using 11 workers ...
+  Generating static pages using 11 workers (0/21) ...
+  Generating static pages using 11 workers (5/21) 
+  Generating static pages using 11 workers (10/21) 
+  Generating static pages using 11 workers (15/21) 
+✓ Generating static pages using 11 workers (21/21) in 3.9s
+  Finalizing page optimization ...
+
+Route (app)
+┌ ƒ /
+├ ƒ /_not-found
+├ ƒ /about
+├ ƒ /account
+├ ƒ /admin
+├ ƒ /admin/products
+├ ƒ /admin/products/[id]/edit
+├ ƒ /admin/products/create
+├ ƒ /admin/sales
+├ ƒ /api/auth/[...nextauth]
+├ ƒ /api/confirm
+├ ƒ /api/kashier-webhook
+├ ƒ /api/payment
+├ ƒ /cart
+├ ƒ /checkout
+├ ƒ /favorites
+├ ƒ /orders
+├ ƒ /products
+├ ƒ /products/[id]
+├ ƒ /reviews
+├ ○ /robots.txt
+├ ƒ /sign-in/[[...sign-in]]
+├ ƒ /sign-up/[[...sign-up]]
+└ ○ /sitemap.xml
+
+
+ƒ Proxy (Middleware)
+
+○  (Static)   prerendered as static content
+ƒ  (Dynamic)  server-rendered on demand
+
