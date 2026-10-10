@@ -5,11 +5,12 @@ import FormInput from '@/components/form/FormInput';
 import ImageInput from '@/components/form/ImageInput';
 import PriceInput from '@/components/form/PriceInput';
 import TextAreaInput from '@/components/form/TextAreaInput';
-import { Button } from '@/components/ui/button';
-import { createProductAction } from '@/utils/actions';
+import { createProductAction, requireAdminUser } from '@/utils/actions';
 import { faker } from '@faker-js/faker';
 
-function CreateProductPage() {
+async function CreateProductPage() {
+  await requireAdminUser();
+
   const name = faker.commerce.productName();
   const company = faker.company.name();
   const description = faker.lorem.paragraph({ min: 10, max: 12 });

@@ -39,11 +39,14 @@ function SelectProductAmount(
         onValueChange={(value) => setAmount(Number(value))}
         disabled={cartItem ? props.isLoading : false}
       >
-        <SelectTrigger className={cartItem ? 'w-[100px]' : 'w-[150px]'}>
+        <SelectTrigger
+          className={cartItem ? 'w-[100px]' : 'w-[150px]'}
+          aria-label="Quantity"
+        >
           <SelectValue placeholder={amount} />
         </SelectTrigger>
         <SelectContent>
-          {Array.from({ length: cartItem ? amount + 10 : 10 }, (_, index) => {
+          {Array.from({ length: cartItem ? Math.min(99, amount + 10) : 10 }, (_, index) => {
             const selectValue = (index + 1).toString();
             return (
               <SelectItem key={selectValue} value={selectValue}>

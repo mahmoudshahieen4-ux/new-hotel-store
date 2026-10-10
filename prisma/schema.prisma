@@ -8,7 +8,7 @@ generator client {
 }
 
 // ============================================================================
-// Application Enums (Hotel Management System)
+// Application Enums (Shahleen Store)
 // ============================================================================
 enum Role {
   USER
@@ -92,7 +92,7 @@ model Authenticator {
 }
 
 // ============================================================================
-// Application Models (Hotel Management System)
+// Application Models (Shahleen Store)
 // ============================================================================
 
 model Product {
@@ -109,9 +109,13 @@ model Product {
   userId String
   user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  favorites Favorite[]
-  reviews   Review[]
-  cartItems CartItem[]
+  favorites  Favorite[]
+  reviews    Review[]
+  cartItems  CartItem[]
+  orderItems OrderItem[]
+
+  @@index([featured])
+  @@index([createdAt])
 }
 
 model Favorite {
@@ -124,6 +128,9 @@ model Favorite {
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  @@unique([userId, productId])
+  @@index([userId])
 }
 
 model Review {
@@ -141,11 +148,15 @@ model Review {
 
   product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
   productId String
+
+  @@unique([userId, productId])
+  @@index([productId])
+  @@index([userId])
 }
 
 model Cart {
   id     String @id @default(uuid())
-  userId String
+  userId String @unique
   user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   cartItems      CartItem[]
@@ -171,6 +182,9 @@ model CartItem {
   amount    Int
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  @@unique([cartId, productId])
+  @@index([cartId])
 }
 
 model Order {
@@ -185,10 +199,32 @@ model Order {
   email      String
   isPaid     Boolean @default(false)
 
-  // Kashier hosted-checkout reference (max 35 chars; used by the return
-  // callback to map the payment back to this order).
+  shippingName    String @default("")
+  shippingPhone   String @default("")
+  shippingAddress String @default("")
+  city            String @default("")
+
+  orderItems OrderItem[]
+
+  // Kashier hosted-checkout reference (max 35 chars)
   paymentOrderId String? @unique
 
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId, isPaid])
+}
+
+model OrderItem {
+  id        String   @id @default(uuid())
+  orderId   String
+  order     Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  productId String
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Restrict)
+  name      String
+  price     Int
+  amount    Int
+  image     String
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }

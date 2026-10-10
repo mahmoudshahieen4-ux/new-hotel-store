@@ -20,11 +20,17 @@ const accounts: { name: string; email: string; role: "USER" | "ADMIN" }[] = [
 ];
 
 async function main() {
+  if (process.env.NODE_ENV === "production") {
+    console.error("❌ Refusing to run seed-auth in production!");
+    process.exit(1);
+  }
+
   const hashedPassword = await hash(TEST_PASSWORD, 10);
 
   for (const account of accounts) {
+    const emailNormalized = account.email.trim().toLowerCase();
     await prisma.user.upsert({
-      where: { email: account.email },
+      where: { email: emailNormalized },
       update: {
         name: account.name,
         password: hashedPassword,
@@ -32,13 +38,13 @@ async function main() {
       },
       create: {
         name: account.name,
-        email: account.email,
+        email: emailNormalized,
         emailVerified: new Date(),
         password: hashedPassword,
         role: account.role,
       },
     });
-    console.log(`✅ ${account.role} account ready (${account.email})`);
+    console.log(`✅ ${account.role} account ready (${emailNormalized})`);
   }
 }
 

@@ -28,7 +28,14 @@ export const authConfig = {
     },
     authorized({ request, auth: authSession }) {
       const { pathname } = request.nextUrl;
-      const loginRoutes = ["/checkout", "/orders", "/user-profile"];
+      const loginRoutes = [
+        "/cart",
+        "/favorites",
+        "/reviews",
+        "/account",
+        "/checkout",
+        "/orders",
+      ];
       const isLoginRoute = loginRoutes.some((route) =>
         pathname.startsWith(route),
       );

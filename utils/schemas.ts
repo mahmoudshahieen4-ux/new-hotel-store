@@ -24,28 +24,51 @@ export const productSchema = z.object({
     }
   ),
 });
+
+export const entityIdSchema = z.string().uuid();
+export const paginationSchema = z.object({
+  page: z.coerce.number().int().min(1).max(100000).default(1),
+  pageSize: z.coerce.number().int().min(1).max(100).default(12),
+});
+export const productListInputSchema = paginationSchema.extend({
+  search: z.string().max(200).default(""),
+});
+export const deleteProductInputSchema = z.object({ productId: entityIdSchema });
+export const deleteReviewInputSchema = z.object({ reviewId: entityIdSchema });
+export const favoriteInputSchema = z.object({
+  productId: entityIdSchema,
+  favoriteId: entityIdSchema.nullable(),
+});
+
+export const cartItemAmountSchema = z.coerce
+  .number()
+  .int({ message: "Amount must be an integer" })
+  .min(1, { message: "Amount must be at least 1" })
+  .max(99, { message: "Amount cannot exceed 99" });
+
 export const imageSchema = z.object({
   image: validateImageFile(),
 });
 
 function validateImageFile() {
   const maxUploadSize = 1024 * 1024;
-  const acceptedFileTypes = ["image/"];
-  if (typeof window !== "undefined" && typeof File !== "undefined") {
-    return z
-      .instanceof(File)
-      .refine((file) => {
-        return !file || file.size <= maxUploadSize;
-      }, "File size must be less than 1MB")
-      .refine((file) => {
-        return (
-          !file || acceptedFileTypes.some((type) => file.type.startsWith(type))
-        );
-      }, "File must be an image");
-  } else {
-    // Server-side: fallback to a generic object validation
-    return z.any();
-  }
+  const acceptedMimeTypes = ["image/jpeg", "image/png", "image/webp"];
+
+  return z.custom<File>((file) => {
+    if (!file) return false;
+    if (typeof window === "undefined") {
+      // Server-side check
+      if (!(file instanceof File)) return false;
+      if (file.size > maxUploadSize) return false;
+      if (!acceptedMimeTypes.includes(file.type)) return false;
+      return true;
+    } else {
+      // Client-side check
+      if (!(file instanceof File)) return false;
+      if (file.size > maxUploadSize) return false;
+      return acceptedMimeTypes.includes(file.type);
+    }
+  }, "File must be a valid image (JPEG, PNG, WebP) and less than 1MB");
 }
 
 export function validateWithZodSchema<T>(
@@ -55,21 +78,20 @@ export function validateWithZodSchema<T>(
   const result = schema.safeParse(data);
   if (!result.success) {
     const errors = result.error.errors.map((error) => error.message);
-    throw new Error(errors.join(","));
+    throw new ValidationError(errors.join(","));
   }
   return result.data;
 }
 
+export class ValidationError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "ValidationError";
+  }
+}
+
 export const reviewSchema = z.object({
-  productId: z.string().refine((value) => value !== "", {
-    message: "Product ID cannot be empty",
-  }),
-  authorName: z.string().refine((value) => value !== "", {
-    message: "Author name cannot be empty",
-  }),
-  authorImageUrl: z.string().refine((value) => value !== "", {
-    message: "Author image URL cannot be empty",
-  }),
+  productId: entityIdSchema,
   rating: z.coerce
     .number()
     .int()
@@ -79,6 +101,22 @@ export const reviewSchema = z.object({
     .string()
     .min(10, { message: "Comment must be at least 10 characters long" })
     .max(1000, { message: "Comment must be at most 1000 characters long" }),
+});
+
+export const shippingSchema = z.object({
+  shippingName: z
+    .string()
+    .min(2, { message: "Name must be at least 2 characters" }),
+  shippingPhone: z.string().refine(
+    (phone) => /^01[0125][0-9]{8}$/.test(phone.trim()),
+    { message: "Please enter a valid Egyptian phone number (e.g. 01012345678)" }
+  ),
+  shippingAddress: z
+    .string()
+    .min(5, { message: "Address must be at least 5 characters" }),
+  city: z
+    .string()
+    .min(2, { message: "City must be at least 2 characters" }),
 });
 
 export const registerSchema = z.object({
@@ -91,5 +129,4 @@ export const registerSchema = z.object({
     .string()
     .min(8, { message: "Password must be at least 8 characters" })
     .max(100, { message: "Password must be at most 100 characters" }),
-  role: z.enum(["USER", "ADMIN"]),
 });

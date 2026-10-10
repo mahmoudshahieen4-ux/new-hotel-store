@@ -2,7 +2,6 @@
 
 import { Suspense, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
-import axios from "axios";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { ReloadIcon } from "@radix-ui/react-icons";
@@ -16,7 +15,6 @@ type PaymentResponse = { url: string | null; message?: string };
 function CheckoutContent() {
   const searchParams = useSearchParams();
   const orderId = searchParams.get("orderId");
-  const cartId = searchParams.get("cartId");
 
   const [status, setStatus] = useState<"loading" | "ready" | "error">(
     "loading",
@@ -28,19 +26,21 @@ function CheckoutContent() {
     let cancelled = false;
     const init = async () => {
       try {
-        const res = await axios.post<PaymentResponse>("/api/payment", {
-          orderId,
-          cartId,
+        const res = await fetch("/api/payment", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ orderId }),
         });
+        const data: PaymentResponse = await res.json();
+
         if (cancelled) return;
-        if (res.data?.url) {
-          setPaymentUrl(res.data.url);
+        if (data?.url) {
+          setPaymentUrl(data.url);
           setStatus("ready");
-          // Redirect to the Kashier hosted checkout page.
-          window.location.assign(res.data.url);
+          window.location.assign(data.url);
         } else {
           setMessage(
-            res.data?.message || "Payment could not be initialized.",
+            data?.message || "Payment could not be initialized.",
           );
           setStatus("error");
         }
@@ -54,7 +54,7 @@ function CheckoutContent() {
     return () => {
       cancelled = true;
     };
-  }, [orderId, cartId]);
+  }, [orderId]);
 
   if (status === "loading") {
     return (

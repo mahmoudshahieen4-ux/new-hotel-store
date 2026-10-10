@@ -1,48 +1,44 @@
-import { createHmac, randomUUID } from "crypto";
+import { createHmac, randomUUID, timingSafeEqual } from "crypto";
+import { CURRENCY } from "./config";
 
-/**
- * Kashier payment gateway helpers (hosted checkout).
- *
- * Required environment variables:
- *   KASHIER_MERCHANT_ID     e.g. "MID-XXXX-XXXX" (also referenced as `mid`)
- *   KASHIER_HASH_KEY        your merchant hash key (used to sign requests)
- * Optional:
- *   KASHIER_CURRENCY        default "EGP"
- *   KASHIER_MODE            "test" | "live" (default "test")
- *   KASHIER_CHECKOUT_URL    default "https://checkout.kashier.io/"
- */
+const paymentApiKey = () => process.env.KASHIER_API_KEY || process.env.KASHIER_HASH_KEY;
 
 export const isKashierConfigured = () =>
-  Boolean(
-    process.env.KASHIER_MERCHANT_ID && process.env.KASHIER_HASH_KEY,
-  );
+  Boolean(process.env.KASHIER_MERCHANT_ID && paymentApiKey());
 
-/**
- * Kashier requires a unique order id of max 35 chars, alphanumeric plus
- * dash/underscore. Generate a short reference so we can map the gateway
- * callback back to our UUID-based order.
- */
-export const generateKashierOrderId = () => {
-  const rand = randomUUID().replace(/-/g, "").slice(0, 24);
-  return `${Date.now()}${rand}`.slice(0, 35);
-};
+export const generateKashierOrderId = () =>
+  `${Date.now()}${randomUUID().replace(/-/g, "").slice(0, 24)}`.slice(0, 35);
 
-/**
- * Kashier signature: HMAC-SHA256 over the concatenation of
- * mid + orderId + amount + currency using the merchant hash key.
- * amount is in the major currency unit with two decimals, e.g. "10.00".
- */
 export const kashierHash = (
   merchantId: string,
   orderId: string,
   amount: string,
   currency: string,
-  hashKey: string,
-) => createHmac("sha256", hashKey).update(`${merchantId}${orderId}${amount}${currency}`).digest("hex");
+  apiKey: string,
+) =>
+  createHmac("sha256", apiKey)
+    .update(`/?payment=${merchantId}.${orderId}.${amount}.${currency}`)
+    .digest("hex");
+
+/** Verify Kashier Payment UI redirect responses using its fixed signed field order. */
+export const verifyKashierSignature = (params: URLSearchParams): boolean => {
+  const apiKey = paymentApiKey();
+  const signature = params.get("signature");
+  if (!apiKey || !signature || !/^[a-f\d]{64}$/i.test(signature)) return false;
+
+  const fields = [
+    "paymentStatus", "cardDataToken", "maskedCard", "merchantOrderId", "orderId",
+    "cardBrand", "orderReference", "transactionId", "amount", "currency",
+  ];
+  const body = fields.map((field) => `${field}=${params.get(field) ?? "null"}`).join("&");
+  const expected = Buffer.from(createHmac("sha256", apiKey).update(body).digest("hex"), "utf8");
+  const received = Buffer.from(signature.toLowerCase(), "utf8");
+  return expected.length === received.length && timingSafeEqual(expected, received);
+};
 
 type BuildUrlArgs = {
   orderId: string;
-  amount: number; // major unit, e.g. 10 for $10/EGP10
+  amount: number;
   merchantRedirect: string;
   failureRedirect: string;
   customerEmail?: string;
@@ -50,42 +46,20 @@ type BuildUrlArgs = {
 };
 
 export const buildKashierCheckoutUrl = ({
-  orderId,
-  amount,
-  merchantRedirect,
-  failureRedirect,
-  customerEmail,
-  customerName,
+  orderId, amount, merchantRedirect, failureRedirect, customerEmail, customerName,
 }: BuildUrlArgs): string => {
   const merchantId = process.env.KASHIER_MERCHANT_ID as string;
-  const hashKey = process.env.KASHIER_HASH_KEY as string;
-  const currency = process.env.KASHIER_CURRENCY || "EGP";
+  const apiKey = paymentApiKey() as string;
   const mode = process.env.KASHIER_MODE || "test";
-  const checkoutUrl =
-    process.env.KASHIER_CHECKOUT_URL || "https://checkout.kashier.io/";
-
-  const amountStr = (typeof amount === "number" ? amount : Number(amount)).toFixed(2);
-  const hash = kashierHash(merchantId, orderId, amountStr, currency, hashKey);
-
-  // `merchantId` is the documented hosted-checkout field; `mid` is also widely
-  // accepted. We include both (same value) for compatibility. The signature is
-  // recomputed server-side from the merchant's own id, so the extra param is
-  // harmless.
+  const checkoutUrl = process.env.KASHIER_CHECKOUT_URL || "https://checkout.kashier.io/";
+  const amountStr = amount.toFixed(2);
+  const hash = kashierHash(merchantId, orderId, amountStr, CURRENCY, apiKey);
   const params = new URLSearchParams({
-    merchantId,
-    mid: merchantId,
-    orderId,
-    amount: amountStr,
-    currency,
-    hash,
-    type: "card",
-    mode,
-    merchantRedirect,
-    failureRedirect,
+    merchantId, mid: merchantId, orderId, amount: amountStr, currency: CURRENCY,
+    hash, type: "card", mode, merchantRedirect, failureRedirect,
   });
   if (customerEmail) params.append("email", customerEmail);
   if (customerName) params.append("name", customerName);
-
-  const hasQuery = checkoutUrl.includes("?");
-  return `${checkoutUrl}${hasQuery ? "&" : "?"}${params.toString()}`;
+  return `${checkoutUrl}${checkoutUrl.includes("?") ? "&" : "?"}${params.toString()}`;
 };
+

@@ -2,18 +2,31 @@
 
 import db, { withDbRetry } from "@/utils/db";
 import { auth } from "@/auth";
-import { redirect } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { hash } from "bcryptjs";
 import {
+  cartItemAmountSchema,
+  deleteProductInputSchema,
+  deleteReviewInputSchema,
+  entityIdSchema,
+  favoriteInputSchema,
+  paginationSchema,
+  productListInputSchema,
   imageSchema,
   productSchema,
   registerSchema,
   reviewSchema,
+  shippingSchema,
   validateWithZodSchema,
+  ValidationError,
 } from "./schemas";
-import { deleteImage, uploadImage } from "./supabase";
+import { DEFAULT_SHIPPING_FEE, DEFAULT_TAX_RATE } from "./config";
+import { deleteImage, uploadImage } from "./blob";
 import { revalidatePath } from "next/cache";
 import { Cart } from "@prisma/client";
+import type { ActionState } from "./types";
+import { calculateMoneyTotals } from "./money";
+import { isAdminRole } from "./authorization";
 
 /**
  * Get authenticated user from NextAuth session
@@ -24,45 +37,45 @@ const getAuthUser = async () => {
   if (!session?.user?.id) {
     redirect("/");
   }
-return session.user as typeof session.user & { id: string };
-};
-
-/**
- * Get admin IDs from environment variables
- */
-const getAdminIds = (): string[] => {
-  const ids = [
-    process.env.ADMIN_USER_ID,
-    process.env.ADMIN_TEST_USER_ID,
-  ].filter(Boolean) as string[];
-  return ids;
+  return session.user as typeof session.user & { id: string };
 };
 
 /**
  * Get authenticated admin user
- * Redirects if user is not an admin
+ * Redirects if user is not an admin, checking DB for role truth
  */
 const getAdminUser = async () => {
   const user = await getAuthUser();
-  const adminIds = getAdminIds();
-  // A user is an admin either via the role set on their account
-  // (e.g. through "sign up as admin") OR via the legacy env-var whitelist.
-  const isAdmin =
-    (user as { role?: string }).role === "ADMIN" || adminIds.includes(user.id);
-  if (!isAdmin) {
+  const dbUser = await withDbRetry(() =>
+    db.user.findUnique({
+      where: { id: user.id },
+      select: { role: true },
+    })
+  );
+  if (!dbUser || !isAdminRole(dbUser.role)) {
     redirect("/");
   }
   return user;
 };
 
+export const requireAdminUser = async () => getAdminUser();
+
 /**
- * Handle and log errors
+ * Handle and log errors safely without leaking internal DB stack traces
  */
 const renderError = (error: unknown): { message: string } => {
-  console.log(error);
-  return {
-    message: error instanceof Error ? error.message : "an error occurred",
-  };
+  console.error("Action error:", error);
+  if (error instanceof ValidationError) return { message: error.message };
+  return { message: "An unexpected error occurred. Please try again." };
+};
+
+const sanitizeImageFilename = (file: File): string => {
+  const extension = file.type === "image/jpeg" ? "jpg" : file.type.split("/")[1];
+  const base = file.name.replace(/\\/g, "/").split("/").pop() || "image";
+  const slug = base.replace(/\.[^.]+$/, "").toLowerCase()
+    .normalize("NFKD").replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "").slice(0, 80) || "image";
+  return `${slug}.${extension}`;
 };
 
 // ============================================================================
@@ -73,28 +86,22 @@ type RegisterInput = {
   name: string;
   email: string;
   password: string;
-  role?: "USER" | "ADMIN";
 };
 
 /**
- * Create a new account (user or admin) with email + password.
- *
- * After this succeeds, the client signs the user in with the credentials
- * provider and redirects them to the appropriate page (/admin for admins).
- * Returns `{ message: "success" }` on success or an error message otherwise.
+ * Create a new user account with email + password.
+ * Always created with role "USER".
  */
 export const registerUserAction = async (
   input: RegisterInput,
 ): Promise<{ message: string }> => {
   try {
-    const validated = validateWithZodSchema(registerSchema, {
-      ...input,
-      role: input.role || "USER",
-    });
+    const validated = validateWithZodSchema(registerSchema, input);
+    const emailNormalized = validated.email.trim().toLowerCase();
 
     const existing = await withDbRetry(() =>
       db.user.findUnique({
-        where: { email: validated.email },
+        where: { email: emailNormalized },
         select: { id: true },
       }),
     );
@@ -108,16 +115,43 @@ export const registerUserAction = async (
       db.user.create({
         data: {
           name: validated.name,
-          email: validated.email,
+          email: emailNormalized,
           password: hashedPassword,
-          role: validated.role,
-          emailVerified: new Date(),
+          role: "USER",
+          emailVerified: null,
         },
       }),
     );
 
     return { message: "success" };
   } catch (error) {
+    const prismaError =
+      typeof error === "object" && error !== null
+        ? (error as { code?: unknown; errorCode?: unknown })
+        : undefined;
+    const prismaCode = prismaError?.code ?? prismaError?.errorCode;
+
+    if (prismaCode === "P2002") {
+      return { message: "An account with this email already exists." };
+    }
+
+    if (prismaCode === "P2021" || prismaCode === "P2022") {
+      console.error("Sign-up failed because the database schema is out of date.", error);
+      return {
+        message: "Sign-up is not ready yet. Apply the latest database migrations and try again.",
+      };
+    }
+
+    if (
+      typeof prismaCode === "string" &&
+      ["P1000", "P1001", "P1002", "P1003", "P1017"].includes(prismaCode)
+    ) {
+      console.error("Sign-up could not connect to the database.", error);
+      return {
+        message: "Sign-up is temporarily unavailable. Check the database connection and try again.",
+      };
+    }
+
     return renderError(error);
   }
 };
@@ -137,50 +171,66 @@ export const fetchFeaturedProducts = async () => {
   return products;
 };
 
-export const fetchAllProducts = ({
-  search = "",
-}: {
-  search: string;
+export const fetchAllProducts = async (input: {
+  search?: string;
+  page?: number;
+  pageSize?: number;
 }) => {
-  return withDbRetry(() =>
-    db.product.findMany({
-      where: {
+  const { search: safeSearch, page, pageSize } = validateWithZodSchema(productListInputSchema, input);
+  const pageNum = page ?? 1;
+  const safePageSize = pageSize ?? 12;
+  const skip = (pageNum - 1) * safePageSize;
+  const where = safeSearch
+    ? {
         OR: [
-          { name: { contains: search, mode: "insensitive" } },
-          { company: { contains: search, mode: "insensitive" } },
+          { name: { contains: safeSearch, mode: "insensitive" as const } },
+          { company: { contains: safeSearch, mode: "insensitive" as const } },
         ],
-      },
-      orderBy: {
-        createdAt: "desc",
-      },
-    }),
-  );
+      }
+    : {};
+
+  const [products, total] = await Promise.all([
+    withDbRetry(() =>
+      db.product.findMany({
+        where,
+        orderBy: { createdAt: "desc" },
+        skip,
+        take: safePageSize,
+      })
+    ),
+    withDbRetry(() => db.product.count({ where })),
+  ]);
+
+  const totalPages = Math.max(1, Math.ceil(total / safePageSize));
+  return { products, total, totalPages, page: pageNum };
 };
 
 export const fetchSingleProduct = async (productId: string) => {
+  const validProductId = validateWithZodSchema(entityIdSchema, productId);
   const product = await withDbRetry(() =>
     db.product.findUnique({
       where: {
-        id: productId,
+        id: validProductId,
       },
     }),
   );
   if (!product) {
-    redirect("/products");
+    notFound();
   }
   return product;
 };
 
 export const createProductAction = async (
-  prevState: any,
+  prevState: ActionState,
   formData: FormData,
 ): Promise<{ message: string }> => {
-  const user = await getAuthUser();
+  const user = await getAdminUser();
   try {
     const rawData = Object.fromEntries(formData);
     const file = formData.get("image") as File;
     const validatedFields = validateWithZodSchema(productSchema, rawData);
     const validatedFile = validateWithZodSchema(imageSchema, { image: file });
+    validatedFile.image = new File([validatedFile.image], sanitizeImageFilename(validatedFile.image), { type: validatedFile.image.type });
     const fullPath = await uploadImage(validatedFile.image);
 
     await db.product.create({
@@ -196,26 +246,33 @@ export const createProductAction = async (
   redirect("/admin/products");
 };
 
-export const fetchAdminProducts = async () => {
+export const fetchAdminProducts = async (page = 1) => {
   await getAdminUser();
-  const products = await withDbRetry(() =>
-    db.product.findMany({
+  const pageNum = validateWithZodSchema(paginationSchema, { page }).page ?? 1;
+  const [products, total] = await Promise.all([
+    withDbRetry(() => db.product.findMany({
       orderBy: {
         createdAt: "desc",
       },
-    }),
-  );
-  return products;
+      skip: (pageNum - 1) * 12,
+      take: 12,
+    })),
+    withDbRetry(() => db.product.count()),
+  ]);
+  return { products, total, totalPages: Math.max(1, Math.ceil(total / 12)), page: pageNum };
 };
 
 export const deleteProductAction = async (prevState: { productId: string }) => {
-  const { productId } = prevState;
+  const { productId } = validateWithZodSchema(deleteProductInputSchema, prevState);
   await getAdminUser();
   try {
-    const product = await db.product.delete({
-      where: {
-        id: productId,
-      },
+    const product = await withDbRetry(() => db.product.findUnique({
+      where: { id: productId },
+    }));
+    if (!product) return { message: "Product not found" };
+
+    await db.product.delete({
+      where: { id: productId },
     });
     await deleteImage(product.image);
     revalidatePath("/admin/products");
@@ -227,22 +284,24 @@ export const deleteProductAction = async (prevState: { productId: string }) => {
 
 export const fetchAdminProductDetails = async (productId: string) => {
   await getAdminUser();
-  const product = await db.product.findUnique({
+  const validProductId = validateWithZodSchema(entityIdSchema, productId);
+  const product = await withDbRetry(() => db.product.findUnique({
     where: {
-      id: productId,
+      id: validProductId,
     },
-  });
+  }));
   if (!product) redirect("/admin/products");
   return product;
 };
 
 export const updateProductAction = async (
-  prevState: any,
+  prevState: ActionState,
   formData: FormData,
 ) => {
   await getAdminUser();
   try {
     const productId = formData.get("id") as string;
+    validateWithZodSchema(entityIdSchema, productId);
     const rawData = Object.fromEntries(formData);
     const validatedFields = validateWithZodSchema(productSchema, rawData);
 
@@ -262,20 +321,24 @@ export const updateProductAction = async (
 };
 
 export const updateProductImageAction = async (
-  prevState: any,
+  prevState: ActionState,
   formData: FormData,
 ) => {
-  // 1. التحقق من صلاحيات الأدمن
   await getAdminUser();
   try {
     const image = formData.get("image") as File;
     const productId = formData.get("id") as string;
-    const oldImageUrl = formData.get("url") as string;
+    validateWithZodSchema(entityIdSchema, productId);
+
+    const product = await withDbRetry(() => db.product.findUnique({
+      where: { id: productId },
+    }));
+    if (!product) return { message: "Product not found" };
 
     const validatedFile = validateWithZodSchema(imageSchema, { image });
-    const fullPath = await uploadImage(validatedFile.image);
+    const safeFile = new File([validatedFile.image], sanitizeImageFilename(validatedFile.image), { type: validatedFile.image.type });
+    const fullPath = await uploadImage(safeFile);
 
-    // 2. تحديث قاعدة البيانات أولاً لضمان عدم فقدان الصورة القديمة إذا فشل الاستعلام
     await db.product.update({
       where: {
         id: productId,
@@ -285,8 +348,7 @@ export const updateProductImageAction = async (
       },
     });
 
-    // 3. حذف الصورة القديمة بعد نجاح التحديث
-    await deleteImage(oldImageUrl);
+    await deleteImage(product.image);
 
     revalidatePath(`/admin/products/${productId}/edit`);
     return { message: "Product Image updated successfully" };
@@ -300,11 +362,11 @@ export const updateProductImageAction = async (
 // ============================================================================
 
 export const fetchFavoriteId = async ({ productId }: { productId: string }) => {
-  // التحقق من الجلسة بدون توجيه إجباري لمنع طرد الزوار غير المسجلين
+  validateWithZodSchema(entityIdSchema, productId);
   const session = await auth();
   if (!session?.user?.id) return null;
 
-  const favorite = await db.favorite.findFirst({
+  const favorite = await withDbRetry(() => db.favorite.findFirst({
     where: {
       productId,
       userId: session.user.id,
@@ -312,23 +374,23 @@ export const fetchFavoriteId = async ({ productId }: { productId: string }) => {
     select: {
       id: true,
     },
-  });
+  }));
   return favorite?.id || null;
 };
 
 export const toggleFavoriteAction = async (prevState: {
   productId: string;
   favoriteId: string | null;
-  pathname: string;
 }) => {
   const user = await getAuthUser();
-  const { productId, favoriteId, pathname } = prevState;
+  const { productId, favoriteId } = validateWithZodSchema(favoriteInputSchema, prevState);
 
   try {
     if (favoriteId) {
-      await db.favorite.delete({
+      await db.favorite.deleteMany({
         where: {
           id: favoriteId,
+          userId: user.id,
         },
       });
     } else {
@@ -339,7 +401,8 @@ export const toggleFavoriteAction = async (prevState: {
         },
       });
     }
-    revalidatePath(pathname);
+    revalidatePath("/favorites");
+    revalidatePath(`/products/${productId}`);
     return { message: favoriteId ? "removed from faves" : "added to faves" };
   } catch (error) {
     return renderError(error);
@@ -347,38 +410,30 @@ export const toggleFavoriteAction = async (prevState: {
 };
 
 export const fetchUserFavorites = async () => {
-  // Guest-safe: return an empty list for unauthenticated visitors so the
-  // favorites page always opens (showing an empty state) instead of
-  // redirecting them away when they click the favorites icon in the nav.
   const session = await auth();
   if (!session?.user?.id) return [];
 
-  const favorites = await db.favorite.findMany({
+  const favorites = await withDbRetry(() => db.favorite.findMany({
     where: {
       userId: session.user.id,
     },
     include: {
       product: true,
     },
-  });
+  }));
   return favorites;
 };
 
-/**
- * Returns the number of saved (favorites) products for the current user.
- * Guest-safe: returns 0 immediately when there is no session, so it can be
- * used in the navbar icon without redirecting unauthenticated visitors.
- */
 export const fetchFavoritesCount = async () => {
   try {
     const session = await auth();
     if (!session?.user?.id) return 0;
 
-    const count = await db.favorite.count({
+    const count = await withDbRetry(() => db.favorite.count({
       where: {
         userId: session.user.id,
       },
-    });
+    }));
     return count;
   } catch {
     return 0;
@@ -390,40 +445,48 @@ export const fetchFavoritesCount = async () => {
 // ============================================================================
 
 export const createReviewAction = async (
-  prevState: any,
+  prevState: ActionState,
   formData: FormData,
 ) => {
   const user = await getAuthUser();
   try {
     const rawData = Object.fromEntries(formData);
     const validatedFields = validateWithZodSchema(reviewSchema, rawData);
+
     await db.review.create({
       data: {
         ...validatedFields,
         userId: user.id,
+        authorName: user.name || "User",
+        authorImageUrl: user.image || "",
       },
     });
     revalidatePath(`/products/${validatedFields.productId}`);
     return { message: "review submitted successfully" };
   } catch (error) {
+    if (typeof error === "object" && error !== null && "code" in error && error.code === "P2002") {
+      return { message: "You have already reviewed this product" };
+    }
     return renderError(error);
   }
 };
 
 export const fetchProductReviews = async (productId: string) => {
-  const reviews = await db.review.findMany({
+  validateWithZodSchema(entityIdSchema, productId);
+  const reviews = await withDbRetry(() => db.review.findMany({
     where: {
       productId,
     },
     orderBy: {
       createdAt: "desc",
     },
-  });
+  }));
   return reviews;
 };
 
 export const fetchProductRating = async (productId: string) => {
-  const result = await db.review.groupBy({
+  validateWithZodSchema(entityIdSchema, productId);
+  const result = await withDbRetry(() => db.review.groupBy({
     by: ["productId"],
     _avg: {
       rating: true,
@@ -432,16 +495,28 @@ export const fetchProductRating = async (productId: string) => {
       rating: true,
     },
     where: { productId },
-  });
+  }));
   return {
-    rating: result[0]?._avg.rating?.toFixed(1) ?? 0,
+    rating: Number(result[0]?._avg.rating?.toFixed(1) ?? 0),
     count: result[0]?._count.rating ?? 0,
   };
 };
 
-export const fetchProductReviewsByUser = async () => {
+export const findExistingReview = async (productId: string) => {
+  const validProductId = validateWithZodSchema(entityIdSchema, productId);
+  const session = await auth();
+  if (!session?.user?.id) return null;
+  return withDbRetry(() => db.review.findFirst({
+    where: { userId: session.user.id, productId: validProductId },
+    select: { id: true },
+  }));
+};
+
+export const fetchProductReviewsByUser = async (page = 1) => {
   const user = await getAuthUser();
-  const reviews = await db.review.findMany({
+  const pageNum = validateWithZodSchema(paginationSchema, { page }).page ?? 1;
+  const [reviews, total] = await Promise.all([
+    withDbRetry(() => db.review.findMany({
     where: {
       userId: user.id,
     },
@@ -456,12 +531,16 @@ export const fetchProductReviewsByUser = async () => {
         },
       },
     },
-  });
-  return reviews;
+      skip: (pageNum - 1) * 12,
+      take: 12,
+    })),
+    withDbRetry(() => db.review.count({ where: { userId: user.id } })),
+  ]);
+  return { reviews, total, totalPages: Math.max(1, Math.ceil(total / 12)), page: pageNum };
 };
 
 export const deleteReviewAction = async (prevState: { reviewId: string }) => {
-  const { reviewId } = prevState;
+  const { reviewId } = validateWithZodSchema(deleteReviewInputSchema, prevState);
   const user = await getAuthUser();
   try {
     await db.review.delete({
@@ -477,15 +556,6 @@ export const deleteReviewAction = async (prevState: { reviewId: string }) => {
   }
 };
 
-export const findExistingReview = async (userId: string, productId: string) => {
-  return db.review.findFirst({
-    where: {
-      userId,
-      productId,
-    },
-  });
-};
-
 // ============================================================================
 // Cart Actions
 // ============================================================================
@@ -496,14 +566,14 @@ export const fetchCartItems = async () => {
     // إرجاع 0 فوراً في حال عدم وجود جلسة لتجنب الاستعلام الباطل
     if (!session?.user?.id) return 0;
 
-    const cart = await db.cart.findFirst({
+    const cart = await withDbRetry(() => db.cart.findFirst({
       where: {
         userId: session.user.id,
       },
       select: {
         numItemsInCart: true,
       },
-    });
+    }));
     return cart?.numItemsInCart || 0;
   } catch {
     return 0;
@@ -511,11 +581,11 @@ export const fetchCartItems = async () => {
 };
 
 const fetchProduct = async (productId: string) => {
-  const product = await db.product.findUnique({
+  const product = await withDbRetry(() => db.product.findUnique({
     where: {
       id: productId,
     },
-  });
+  }));
   if (!product) {
     throw new Error("Product not found");
   }
@@ -530,27 +600,42 @@ const includeProductClause = {
   },
 };
 
-export const fetchOrCreateCart = async ({
+export const fetchUserCart = async () => {
+  const user = await getAuthUser();
+  const cart = await withDbRetry(() => db.cart.findUnique({
+    where: { userId: user.id },
+    include: includeProductClause,
+  }));
+  if (!cart) return null;
+  const cartTotal = cart.cartItems.reduce((total, item) => total + item.amount * item.product.price, 0);
+  const numItemsInCart = cart.cartItems.reduce((total, item) => total + item.amount, 0);
+  const totals = calculateMoneyTotals(cartTotal, DEFAULT_TAX_RATE, DEFAULT_SHIPPING_FEE);
+  return { currentCart: { ...cart, ...totals, taxRate: DEFAULT_TAX_RATE, numItemsInCart }, cartItems: cart.cartItems };
+};
+
+const fetchOrCreateCart = async ({
   userId,
   errorOnFailure = false,
 }: {
   userId: string;
   errorOnFailure?: boolean;
 }) => {
-  let cart = await db.cart.findFirst({
-    where: {
-      userId,
-    },
+  let cart = await withDbRetry(() => db.cart.findUnique({
+    where: { userId },
     include: includeProductClause,
-  });
+  }));
   if (!cart && errorOnFailure) {
     throw new Error("Cart not found");
   }
   if (!cart) {
-    cart = await db.cart.create({
-      data: {
+    cart = await db.cart.upsert({
+      where: { userId },
+      create: {
         userId,
+        shipping: DEFAULT_SHIPPING_FEE,
+        taxRate: DEFAULT_TAX_RATE,
       },
+      update: {},
       include: includeProductClause,
     });
   }
@@ -566,30 +651,32 @@ const updateOrCreateCartItem = async ({
   cartId: string;
   amount: number;
 }) => {
-  let cartItem = await db.cartItem.findFirst({
+  const existing = await withDbRetry(() => db.cartItem.findUnique({
+    where: { cartId_productId: { cartId, productId } },
+  }));
+  validateWithZodSchema(cartItemAmountSchema, (existing?.amount ?? 0) + amount);
+  await db.cartItem.upsert({
     where: {
-      productId,
+      cartId_productId: {
+        cartId,
+        productId,
+      },
+    },
+    update: {
+      amount: {
+        increment: amount,
+      },
+    },
+    create: {
       cartId,
+      productId,
+      amount,
     },
   });
-  if (cartItem) {
-    cartItem = await db.cartItem.update({
-      where: {
-        id: cartItem.id,
-      },
-      data: {
-        amount: cartItem.amount + amount,
-      },
-    });
-  } else {
-    cartItem = await db.cartItem.create({
-      data: { amount, productId, cartId },
-    });
-  }
 };
 
-export const updateCart = async (cart: Cart) => {
-  const cartItems = await db.cartItem.findMany({
+const updateCart = async (cart: Cart) => {
+  const cartItems = await withDbRetry(() => db.cartItem.findMany({
     where: {
       cartId: cart.id,
     },
@@ -599,17 +686,16 @@ export const updateCart = async (cart: Cart) => {
     orderBy: {
       createdAt: "asc",
     },
-  });
+  }));
   let numItemsInCart = 0;
   let cartTotal = 0;
 
   for (const item of cartItems) {
-    numItemsInCart += item.amount;
-    cartTotal += item.amount * item.product.price;
+    const validatedAmount = validateWithZodSchema(cartItemAmountSchema, item.amount);
+    numItemsInCart += validatedAmount;
+    cartTotal += validatedAmount * item.product.price;
   }
-  const tax = cart.taxRate * cartTotal;
-  const shipping = cartTotal ? cart.shipping : 0;
-  const orderTotal = cartTotal + tax + shipping;
+  const totals = calculateMoneyTotals(cartTotal, DEFAULT_TAX_RATE, DEFAULT_SHIPPING_FEE);
 
   const currentCart = await db.cart.update({
     where: {
@@ -617,20 +703,22 @@ export const updateCart = async (cart: Cart) => {
     },
     data: {
       numItemsInCart,
-      cartTotal,
-      tax,
-      orderTotal,
+      taxRate: DEFAULT_TAX_RATE,
+      ...totals,
     },
     include: includeProductClause,
   });
   return { cartItems, currentCart };
 };
 
-export const addToCartAction = async (prevState: any, formData: FormData) => {
+export const addToCartAction = async (prevState: ActionState, formData: FormData) => {
   const user = await getAuthUser();
   try {
     const productId = formData.get("productId") as string;
-    const amount = Number(formData.get("amount"));
+    validateWithZodSchema(entityIdSchema, productId);
+    const rawAmount = formData.get("amount");
+    const amount = validateWithZodSchema(cartItemAmountSchema, rawAmount);
+
     await fetchProduct(productId);
     const cart = await fetchOrCreateCart({ userId: user.id });
     await updateOrCreateCartItem({ productId, cartId: cart.id, amount });
@@ -642,12 +730,13 @@ export const addToCartAction = async (prevState: any, formData: FormData) => {
 };
 
 export const removeCartItemAction = async (
-  prevState: any,
+  prevState: ActionState,
   formData: FormData,
 ) => {
   const user = await getAuthUser();
   try {
     const cartItemId = formData.get("id") as string;
+    validateWithZodSchema(entityIdSchema, cartItemId);
     const cart = await fetchOrCreateCart({
       userId: user.id,
       errorOnFailure: true,
@@ -675,6 +764,8 @@ export const updateCartItemAction = async ({
 }) => {
   const user = await getAuthUser();
   try {
+    const validatedAmount = validateWithZodSchema(cartItemAmountSchema, amount);
+    validateWithZodSchema(entityIdSchema, cartItemId);
     const cart = await fetchOrCreateCart({
       userId: user.id,
       errorOnFailure: true,
@@ -686,7 +777,7 @@ export const updateCartItemAction = async ({
         cartId: cart.id,
       },
       data: {
-        amount,
+        amount: validatedAmount,
       },
     });
     await updateCart(cart);
@@ -701,72 +792,166 @@ export const updateCartItemAction = async ({
 // Order Actions
 // ============================================================================
 
-export const createOrderAction = async (prevState: any, formData: FormData) => {
+export const createOrderAction = async (prevState: ActionState, formData: FormData) => {
   const user = await getAuthUser();
   let orderId: null | string = null;
-  let cartId: null | string = null;
 
   try {
+    const rawShippingData = Object.fromEntries(formData);
+    const validatedShipping = validateWithZodSchema(shippingSchema, rawShippingData);
+
     const cart = await fetchOrCreateCart({
       userId: user.id,
       errorOnFailure: true,
     });
 
-    // التحقق من وجود منتجات داخل السلة قبل إنشاء الطلب
-    if (!cart || cart.numItemsInCart === 0) {
+    if (!cart || !cart.cartItems || cart.cartItems.length === 0) {
       return { message: "Cart is empty" };
     }
 
-    cartId = cart.id;
+    // Recompute order totals from current product prices on the server
+    let numItemsInCart = 0;
+    let cartTotal = 0;
+    const itemSnapshots = [];
 
+    for (const item of cart.cartItems) {
+      const product = await withDbRetry(() => db.product.findUnique({
+        where: { id: item.productId },
+      }));
+      if (!product) continue;
+
+      const safeAmount = validateWithZodSchema(cartItemAmountSchema, item.amount);
+      numItemsInCart += safeAmount;
+      cartTotal += safeAmount * product.price;
+
+      itemSnapshots.push({
+        productId: product.id,
+        name: product.name,
+        price: product.price,
+        amount: safeAmount,
+        image: product.image,
+      });
+    }
+
+    if (itemSnapshots.length === 0 || cartTotal <= 0) {
+      return { message: "Cart contains invalid items or total is non-positive" };
+    }
+
+    const totals = calculateMoneyTotals(cartTotal, DEFAULT_TAX_RATE, DEFAULT_SHIPPING_FEE);
+    if (totals.orderTotal <= 0) return { message: "Order total must be greater than zero" };
+
+    // Clean up stale unpaid orders (older than 24h)
+    const staleCutoff = new Date(Date.now() - 24 * 60 * 60 * 1000);
     await db.order.deleteMany({
       where: {
         userId: user.id,
         isPaid: false,
+        createdAt: { lt: staleCutoff },
       },
     });
 
-    const order = await db.order.create({
-      data: {
+    // Reuse existing unpaid order if present
+    const existingOrder = await withDbRetry(() => db.order.findFirst({
+      where: {
         userId: user.id,
-        products: cart.numItemsInCart,
-        orderTotal: cart.orderTotal,
-        tax: cart.tax,
-        shipping: cart.shipping,
-        email: user.email || "",
+        isPaid: false,
       },
-    });
-    orderId = order.id;
+      orderBy: { createdAt: "desc" },
+    }));
+
+    if (existingOrder) {
+      await db.orderItem.deleteMany({
+        where: { orderId: existingOrder.id },
+      });
+
+      const updated = await db.order.update({
+        where: { id: existingOrder.id },
+        data: {
+          products: numItemsInCart,
+          orderTotal: totals.orderTotal,
+          tax: totals.tax,
+          shipping: totals.shipping,
+          email: user.email || "",
+          shippingName: validatedShipping.shippingName,
+          shippingPhone: validatedShipping.shippingPhone,
+          shippingAddress: validatedShipping.shippingAddress,
+          city: validatedShipping.city,
+          orderItems: {
+            create: itemSnapshots,
+          },
+        },
+      });
+      orderId = updated.id;
+    } else {
+      const newOrder = await db.order.create({
+        data: {
+          userId: user.id,
+          products: numItemsInCart,
+          orderTotal: totals.orderTotal,
+          tax: totals.tax,
+          shipping: totals.shipping,
+          email: user.email || "",
+          shippingName: validatedShipping.shippingName,
+          shippingPhone: validatedShipping.shippingPhone,
+          shippingAddress: validatedShipping.shippingAddress,
+          city: validatedShipping.city,
+          orderItems: {
+            create: itemSnapshots,
+          },
+        },
+      });
+      orderId = newOrder.id;
+    }
   } catch (error) {
     return renderError(error);
   }
-  redirect(`/checkout?orderId=${orderId}&cartId=${cartId}`);
+
+  redirect(`/checkout?orderId=${orderId}`);
 };
 
 export const fetchUserOrders = async () => {
   const user = await getAuthUser();
-  const orders = await db.order.findMany({
+  const orders = await withDbRetry(() => db.order.findMany({
     where: {
       userId: user.id,
       isPaid: true,
     },
+    include: {
+      orderItems: true,
+    },
     orderBy: {
       createdAt: "desc",
     },
-  });
+  }));
   return orders;
 };
 
-export const fetchAdminOrders = async () => {
+export const fetchAdminOrders = async (page = 1) => {
   await getAdminUser();
+  const pageNum = validateWithZodSchema(paginationSchema, { page }).page ?? 1;
 
-  const orders = await db.order.findMany({
+  const [orders, total, revenue] = await Promise.all([
+    withDbRetry(() => db.order.findMany({
     where: {
       isPaid: true,
+    },
+    include: {
+      orderItems: true,
+      user: {
+        select: {
+          name: true,
+          email: true,
+        },
+      },
     },
     orderBy: {
       createdAt: "desc",
     },
-  });
-  return orders;
+      skip: (pageNum - 1) * 12,
+      take: 12,
+    })),
+    withDbRetry(() => db.order.count({ where: { isPaid: true } })),
+    withDbRetry(() => db.order.aggregate({ where: { isPaid: true }, _sum: { orderTotal: true } })),
+  ]);
+  return { orders, total, revenue: revenue._sum.orderTotal ?? 0, totalPages: Math.max(1, Math.ceil(total / 12)), page: pageNum };
 };

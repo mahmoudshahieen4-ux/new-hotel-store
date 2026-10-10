@@ -6,22 +6,13 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { useToast } from "@/components/ui/use-toast";
 import { signIn } from "next-auth/react";
 import { registerUserAction } from "@/utils/actions";
 
-type Role = "USER" | "ADMIN";
-
 /**
- * SignUpWrapper - registers a new account (user or admin) with email/password,
- * then signs the user in and redirects admins to /admin.
+ * SignUpWrapper - registers a new user account with email/password,
+ * then signs the user in and redirects to /products.
  */
 export default function SignUpWrapper() {
   const router = useRouter();
@@ -31,7 +22,6 @@ export default function SignUpWrapper() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
-  const [role, setRole] = useState<Role>("USER");
 
   const handleCredentialsSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -55,7 +45,7 @@ export default function SignUpWrapper() {
 
     setIsLoading(true);
     try {
-      const res = await registerUserAction({ name, email, password, role });
+      const res = await registerUserAction({ name, email, password });
 
       if (res.message !== "success") {
         toast({
@@ -86,10 +76,9 @@ export default function SignUpWrapper() {
 
       toast({
         title: "Welcome!",
-        description:
-          role === "ADMIN" ? "Admin account created." : "Account created.",
+        description: "Account created.",
       });
-      router.push(role === "ADMIN" ? "/admin" : "/products");
+      router.push("/products");
       router.refresh();
     } catch (err) {
       toast({
@@ -179,26 +168,6 @@ export default function SignUpWrapper() {
               required
               disabled={isLoading}
             />
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="role">Register as</Label>
-            <Select
-              value={role}
-              onValueChange={(value) => setRole(value as Role)}
-              disabled={isLoading}
-            >
-              <SelectTrigger id="role">
-                <SelectValue placeholder="Select account type" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="USER">User</SelectItem>
-                <SelectItem value="ADMIN">Admin</SelectItem>
-              </SelectContent>
-            </Select>
-            <p className="text-xs text-muted-foreground">
-              Admins get access to the admin dashboard after signing up.
-            </p>
           </div>
 
           <Button className="w-full" disabled={isLoading}>

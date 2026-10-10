@@ -1,4 +1,6 @@
-# How to Set Up Vercel Blob Storage
+# Archived setup notes: Vercel Blob Storage
+
+This archived setup guide may refer to old Vercel project names. Use the current Shahleen Store project and its environment variable settings.
 
 ## Step-by-Step Guide
 
@@ -30,7 +32,7 @@ After creating the Blob store:
 
 ### Step 4: Add Token to Environment Variables
 
-1. Go to your project: **store-next-beta**
+1. Go to the Shahleen Store project
 2. Navigate to: **Settings** → **Environment Variables**
 3. Add a new variable:
    - **Key**: `BLOB_READ_WRITE_TOKEN`
@@ -52,7 +54,7 @@ BLOB_READ_WRITE_TOKEN=vercel_blob_xxxxx_xxxxx_xxxxx
 
 If you don't see the Blob option in the Storage tab:
 
-1. Make sure you're on the **correct project** (store-next-beta)
+1. Make sure you're on the correct Shahleen Store project
 2. Check if your Vercel plan supports Blob storage (it should be available on most plans)
 3. Try refreshing the page
 4. If still not visible, you might need to:

@@ -163,44 +163,47 @@ export default function SignInForm({
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="guest-select">Login with Test Account</Label>
-            <Select
-              key={`select-${selectedRole || "empty"}`}
-              value={selectedRole || undefined}
-              onValueChange={handleRoleSelect}
-            >
-              <SelectTrigger id="guest-select">
-                <SelectValue placeholder="Select Role Based Test Account" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="guest-user">
-                  <div className="flex flex-col items-start">
-                    <span className="font-medium">Test User</span>
-                    <span className="text-xs text-muted-foreground">
-                      test@user.com
-                    </span>
-                  </div>
-                </SelectItem>
-                <SelectItem value="guest-admin">
-                  <div className="flex flex-col items-start">
-                    <span className="font-medium">Guest Admin</span>
-                    <span className="text-xs text-muted-foreground">
-                      test@admin.com
-                    </span>
-                  </div>
-                </SelectItem>
-                {selectedRole && (
-                  <SelectItem
-                    value="clear"
-                    className="opacity-60 focus:opacity-100"
-                  >
-                    Clear Selection
+          {(process.env.NODE_ENV !== "production" ||
+            process.env.NEXT_PUBLIC_ENABLE_DEMO_LOGIN === "true") && (
+            <div className="space-y-2">
+              <Label htmlFor="guest-select">Login with Test Account</Label>
+              <Select
+                key={`select-${selectedRole || "empty"}`}
+                value={selectedRole || undefined}
+                onValueChange={handleRoleSelect}
+              >
+                <SelectTrigger id="guest-select">
+                  <SelectValue placeholder="Select Role Based Test Account" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="guest-user">
+                    <div className="flex flex-col items-start">
+                      <span className="font-medium">Test User</span>
+                      <span className="text-xs text-muted-foreground">
+                        test@user.com
+                      </span>
+                    </div>
                   </SelectItem>
-                )}
-              </SelectContent>
-            </Select>
-          </div>
+                  <SelectItem value="guest-admin">
+                    <div className="flex flex-col items-start">
+                      <span className="font-medium">Guest Admin</span>
+                      <span className="text-xs text-muted-foreground">
+                        test@admin.com
+                      </span>
+                    </div>
+                  </SelectItem>
+                  {selectedRole && (
+                    <SelectItem
+                      value="clear"
+                      className="opacity-60 focus:opacity-100"
+                    >
+                      Clear Selection
+                    </SelectItem>
+                  )}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
 
           <div className="space-y-2">
             <Label htmlFor="email">Email</Label>

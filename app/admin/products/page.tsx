@@ -14,16 +14,18 @@ import {
 } from '@/components/ui/table';
 import { IconButton } from '@/components/form/Buttons';
 import FormContainer from '@/components/form/FormContainer';
+import PaginationContainer from '@/components/global/PaginationContainer';
 
-async function AdminProductsPage() {
-  const items = await fetchAdminProducts();
-  if (items.length === 0) return <EmptyList />;
+async function AdminProductsPage({ searchParams }: { searchParams?: { page?: string } }) {
+  const page = Math.max(1, Number(searchParams?.page) || 1);
+  const { products: items, total, totalPages } = await fetchAdminProducts(page);
+  if (total === 0) return <EmptyList />;
 
   return (
     <section>
       <Table>
         <TableCaption className='capitalize'>
-          total products : {items.length}
+          total products : {total}
         </TableCaption>
         <TableHeader>
           <TableRow>
@@ -59,6 +61,7 @@ async function AdminProductsPage() {
           })}
         </TableBody>
       </Table>
+      <PaginationContainer currentPage={page} totalPages={totalPages} />
     </section>
   );
 }

@@ -64,6 +64,8 @@ export const IconButton = ({ actionType }: { actionType: actionType }) => {
       size="icon"
       variant="link"
       className="p-2 cursor-pointer"
+      disabled={pending}
+      aria-label={actionType === "delete" ? "Delete" : "Edit"}
     >
       {pending ? <ReloadIcon className="animate-spin" /> : renderIcon()}
     </Button>
@@ -80,13 +82,14 @@ export const CardSignInButton = () => {
 
   return (
     <Link
-      href={`/api/auth/signin?callbackUrl=${encodeURIComponent(callbackUrl)}`}
+      href={`/sign-in?callbackUrl=${encodeURIComponent(callbackUrl)}`}
     >
       <Button
         type="button"
         size="icon"
         variant="outline"
         className="p-2 cursor-pointer"
+        aria-label="Sign in to manage favorites"
       >
         <FaRegHeart />
       </Button>
@@ -102,6 +105,8 @@ export const CardSubmitButton = ({ isFavorite }: { isFavorite: boolean }) => {
       size="icon"
       variant="outline"
       className="p-2 cursor-pointer"
+      aria-label={isFavorite ? "Remove from favorites" : "Add to favorites"}
+      disabled={pending}
     >
       {pending ? (
         <ReloadIcon className="animate-spin" />
@@ -119,7 +124,7 @@ export const ProductSignInButton = () => {
   const redirectUrl = pathname || "/products";
 
   return (
-    <Link href={`/sign-in?redirect_url=${encodeURIComponent(redirectUrl)}`}>
+    <Link href={`/sign-in?callbackUrl=${encodeURIComponent(redirectUrl)}`}>
       <Button type="button" className="mt-8 capitalize">
         sign in
       </Button>

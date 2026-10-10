@@ -1,38 +1,99 @@
 [
   {
-    "name": "avant-garde lamp",
-    "company": "Modenza",
-    "description": "Cloud bread VHS hell of banjo bicycle rights jianbing umami mumblecore etsy 8-bit pok pok +1 wolf. Vexillologist yr dreamcatcher waistcoat, authentic chillwave trust fund. Viral typewriter fingerstache pinterest pork belly narwhal. Schlitz venmo everyday carry kitsch pitchfork chillwave iPhone taiyaki trust fund hashtag kinfolk microdosing gochujang live-edge",
+    "name": "Studio Storage Console",
+    "company": "Shahleen Home",
+    "description": "A clean-lined storage console with warm wood finishes and practical open shelving. Designed to bring color, display space, and everyday organization to a modern living room.",
     "featured": true,
-    "image": "https://images.pexels.com/photos/943150/pexels-photo-943150.jpeg?auto=compress&cs=tinysrgb&w=1600",
-    "price": 100,
-    "clerkId": "clerkId"
+    "image": "/images/product-1.jpg",
+    "price": 12500
   },
   {
-    "name": "chic chair",
-    "company": "Luxora",
-    "description": "Cloud bread VHS hell of banjo bicycle rights jianbing umami mumblecore etsy 8-bit pok pok +1 wolf. Vexillologist yr dreamcatcher waistcoat, authentic chillwave trust fund. Viral typewriter fingerstache pinterest pork belly narwhal. Schlitz venmo everyday carry kitsch pitchfork chillwave iPhone taiyaki trust fund hashtag kinfolk microdosing gochujang live-edge",
+    "name": "Panorama Platform Bed",
+    "company": "Shahleen Home",
+    "description": "A low-profile platform bed with a calm, minimal silhouette. Its sturdy frame and natural wood look make a comfortable centerpiece for a bright, contemporary bedroom.",
     "featured": true,
-    "image": "https://images.pexels.com/photos/5705090/pexels-photo-5705090.jpeg?auto=compress&cs=tinysrgb&w=1600",
-    "price": 200,
-    "clerkId": "clerkId"
+    "image": "/images/product-2.jpg",
+    "price": 28500
   },
   {
-    "name": "comfy bed",
-    "company": "Homestead",
-    "description": "Cloud bread VHS hell of banjo bicycle rights jianbing umami mumblecore etsy 8-bit pok pok +1 wolf. Vexillologist yr dreamcatcher waistcoat, authentic chillwave trust fund. Viral typewriter fingerstache pinterest pork belly narwhal. Schlitz venmo everyday carry kitsch pitchfork chillwave iPhone taiyaki trust fund hashtag kinfolk microdosing gochujang live-edge",
+    "name": "Lounge Modular Sofa",
+    "company": "Shahleen Living",
+    "description": "A generous modular sofa with deep seats and soft neutral upholstery. Its flexible layout and relaxed proportions make it an inviting choice for family rooms and entertaining spaces.",
     "featured": true,
-    "image": "https://images.pexels.com/photos/1034584/pexels-photo-1034584.jpeg?auto=compress&cs=tinysrgb&w=1600",
-    "price": 300,
-    "clerkId": "clerkId"
+    "image": "/images/product-3.jpg",
+    "price": 42000
   },
   {
-    "name": "contemporary sofa",
-    "company": "Comfora",
-    "description": "Cloud bread VHS hell of banjo bicycle rights jianbing umami mumblecore etsy 8-bit pok pok +1 wolf. Vexillologist yr dreamcatcher waistcoat, authentic chillwave trust fund. Viral typewriter fingerstache pinterest pork belly narwhal. Schlitz venmo everyday carry kitsch pitchfork chillwave iPhone taiyaki trust fund hashtag kinfolk microdosing gochujang live-edge",
+    "name": "Cognac Leather Two-Seater",
+    "company": "Shahleen Living",
+    "description": "A compact two-seater sofa upholstered in rich cognac-toned leather. Clean proportions, supportive cushions, and a timeless profile bring an understated accent to smaller spaces.",
     "featured": false,
-    "image": "https://images.pexels.com/photos/1571459/pexels-photo-1571459.jpeg?auto=compress&cs=tinysrgb&w=1600",
-    "price": 400,
-    "clerkId": "clerkId"
+    "image": "/images/product-4.jpg",
+    "price": 33500
+  },
+  {
+    "name": "Marble Top Coffee Table",
+    "company": "Shahleen Living",
+    "description": "An elegant coffee table pairing a smooth marble-look top with a solid wood base. Its balanced size works in front of any sofa, giving you room for books, trays, and coffee.",
+    "featured": true,
+    "image": "/images/hero1.jpg",
+    "price": 9800
+  },
+  {
+    "name": "Nordic Reading Armchair",
+    "company": "Shahleen Studio",
+    "description": "A cozy reading armchair with a curved back, soft boucle-style fabric, and solid wooden legs. A perfect quiet corner companion for long evenings with a book and warm light.",
+    "featured": true,
+    "image": "/images/hero2.jpg",
+    "price": 15900
+  },
+  {
+    "name": "Oak Dining Set for Six",
+    "company": "Shahleen Home",
+    "description": "A welcoming six-seat dining set crafted with an oak-look tabletop and comfortably padded chairs. Built for daily family meals and ready to host weekend gatherings with ease.",
+    "featured": false,
+    "image": "/images/hero3.jpg",
+    "price": 49900
+  },
+  {
+    "name": "Minimalist Work Desk",
+    "company": "Shahleen Office",
+    "description": "A streamlined home-office desk with a spacious top, cable-friendly back edge, and sturdy metal legs. Keeps your laptop, lamp, and notebooks organized while looking sharp in any room.",
+    "featured": false,
+    "image": "/images/hero4.jpg",
+    "price": 8500
+  },
+  {
+    "name": "Grand Showcase Wardrobe",
+    "company": "Shahleen Home",
+    "description": "A tall wardrobe with wide mirrored panels, hanging space, and interior shelving for folded clothes. A statement storage piece that makes bedrooms feel bigger, brighter, and tidier.",
+    "featured": true,
+    "image": "/images/product-big.jpg",
+    "price": 54900
+  },
+  {
+    "name": "Cloud Fabric Accent Chair",
+    "company": "Shahleen Studio",
+    "description": "A light accent chair with plush cushioning and gently rounded arms. Easy to move between the living room and bedroom, it adds instant comfort wherever extra seating is needed.",
+    "featured": false,
+    "image": "/images/product-1.jpg",
+    "price": 6400
+  },
+  {
+    "name": "Scandi Bedside Table Duo",
+    "company": "Shahleen Home",
+    "description": "A pair of matching bedside tables with a drawer and open shelf each. Keep your lamp, book, and charger close at hand while the soft-close drawer hides the clutter beautifully.",
+    "featured": false,
+    "image": "/images/product-2.jpg",
+    "price": 7200
+  },
+  {
+    "name": "Family Comfort Sectional",
+    "company": "Shahleen Living",
+    "description": "A large L-shaped sectional with washable-look covers, deep chaise seating, and stain-resistant fabric. Designed for movie nights, naps, and real family life without worrying about mess.",
+    "featured": false,
+    "image": "/images/product-3.jpg",
+    "price": 46500
   }
 ]
+

@@ -1,49 +1,22 @@
-import { redirect } from "next/navigation";
-import { type NextRequest } from "next/server";
-import db from "@/utils/db";
+import { NextRequest, NextResponse } from "next/server";
+import { verifyKashierSignature } from "@/utils/kashier";
+import { completeKashierOrder } from "@/utils/order-payment";
 
-/**
- * Kashier hosted-checkout return callback.
- *
- * Kashier redirects the buyer back to `merchantRedirect` (this route) with
- * query parameters such as `orderId`, `transactionId` and `paymentStatus`
- * (values like `TRX_SUCCESS` / `TRX_FAILED`).
- */
-export const GET = async (req: NextRequest) => {
-  const { searchParams } = new URL(req.url);
-  const orderId = searchParams.get("orderId");
-  const paymentStatus =
-    searchParams.get("paymentStatus") ||
-    searchParams.get("trxStatus") ||
-    searchParams.get("success");
-
-  try {
-    if (orderId) {
-      const order = await db.order.findUnique({
-        where: { paymentOrderId: orderId },
-      });
-      if (order) {
-        const isPaid =
-          paymentStatus === "TRX_SUCCESS" ||
-          paymentStatus === "true" ||
-          paymentStatus === "1" ||
-          paymentStatus === "paid";
-
-        if (isPaid) {
-          await db.order.update({
-            where: { id: order.id },
-            data: { isPaid: true },
-          });
-          // Clear the user's cart after a successful payment.
-          await db.cart.deleteMany({
-            where: { userId: order.userId },
-          });
-        }
-      }
-    }
-  } catch (error) {
-    console.log(error);
+export const GET = async (request: NextRequest) => {
+  const params = request.nextUrl.searchParams;
+  const redirect = (payment: "success" | "failed") =>
+    NextResponse.redirect(new URL(`/orders?payment=${payment}`, process.env.NEXT_PUBLIC_WEBSITE_URL || process.env.AUTH_URL || "http://localhost:3000"));
+  if (!verifyKashierSignature(params) || params.get("paymentStatus") !== "SUCCESS") {
+    return redirect("failed");
   }
-  redirect("/orders");
+  const paymentOrderId = params.get("merchantOrderId");
+  const amount = Number(params.get("amount"));
+  const currency = params.get("currency") || "";
+  if (!paymentOrderId || !Number.isFinite(amount)) return redirect("failed");
+  try {
+    return redirect(await completeKashierOrder(paymentOrderId, amount, currency) ? "success" : "failed");
+  } catch (error) {
+    console.error("Kashier confirmation failed", error);
+    return redirect("failed");
+  }
 };
-

@@ -20,7 +20,12 @@ function FormContainer({
   const { toast } = useToast();
   useEffect(() => {
     if (state.message) {
-      toast({ description: state.message });
+      const msg = state.message.toLowerCase();
+      const isError = !/success|removed|updated|submitted|added to faves/i.test(msg);
+      toast({
+        variant: isError ? "destructive" : "default",
+        description: state.message,
+      });
     }
   }, [state, toast]);
   return <form action={formAction}>{children}</form>;

@@ -7,12 +7,12 @@
     "build": "npx prisma generate && next build",
     "start": "next start",
     "lint": "next lint",
+    "test": "vitest run --pool=threads --poolOptions.threads.singleThread",
     "db:seed": "tsx prisma/seed.ts",
     "db:seed-auth": "tsx prisma/seed-auth.ts"
   },
   "dependencies": {
     "@auth/prisma-adapter": "^2.11.3",
-    "@neondatabase/serverless": "^1.1.0",
     "@prisma/client": "^5.22.0",
     "@radix-ui/react-checkbox": "^1.0.4",
     "@radix-ui/react-dropdown-menu": "^2.0.6",
@@ -24,7 +24,6 @@
     "@radix-ui/react-slot": "^1.0.2",
     "@radix-ui/react-toast": "^1.1.5",
     "@vercel/blob": "^0.19.0",
-    "axios": "^1.7.2",
     "bcryptjs": "^3.0.3",
     "class-variance-authority": "^0.7.0",
     "clsx": "^2.1.1",
@@ -49,11 +48,12 @@
     "@types/react": "^18",
     "@types/react-dom": "^18",
     "eslint": "^8",
-    "eslint-config-next": "14.2.3",
+    "eslint-config-next": "^14.2.35",
     "postcss": "^8",
     "prisma": "^5.22.0",
     "tailwindcss": "^3.4.1",
     "tsx": "^4.21.0",
-    "typescript": "^5"
+    "typescript": "^5",
+    "vitest": "^2.1.9"
   }
 }

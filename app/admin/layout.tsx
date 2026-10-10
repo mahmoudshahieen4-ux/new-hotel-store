@@ -1,7 +1,9 @@
 import { Separator } from '@/components/ui/separator';
 import Sidebar from './Sidebar';
+import { requireAdminUser } from '@/utils/actions';
 
-function DashboardLayout({ children }: { children: React.ReactNode }) {
+async function DashboardLayout({ children }: { children: React.ReactNode }) {
+  await requireAdminUser();
   return (
     <>
       <h2 className='text-2xl pl-4'>Admin Dashboard</h2>

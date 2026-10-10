@@ -1,16 +1,15 @@
 import CartItemsList from "@/components/cart/CartItemsList";
 import CartTotals from "@/components/cart/CartTotals";
 import SectionTitle from "@/components/global/SectionTitle";
-import { fetchOrCreateCart, updateCart } from "@/utils/actions";
+import { fetchUserCart } from "@/utils/actions";
 import { auth } from "@/auth";
 
 async function CartPage() {
   const session = await auth();
-  // Guest-safe: open the cart page with an empty state instead of bouncing
-  // logged-out visitors away when they click the cart icon in the nav.
   if (!session?.user?.id) return <SectionTitle text="Empty Cart" />;
-  const previousCart = await fetchOrCreateCart({ userId: session.user.id });
-  const { currentCart, cartItems } = await updateCart(previousCart);
+  const cartData = await fetchUserCart();
+  if (!cartData) return <SectionTitle text="Empty Cart" />;
+  const { currentCart, cartItems } = cartData;
   if (cartItems.length === 0) return <SectionTitle text="Empty Cart" />;
 
   return (

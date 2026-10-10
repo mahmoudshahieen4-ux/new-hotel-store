@@ -25,13 +25,7 @@ export default function MobileSidebar() {
     }
   }, [open]);
 
-  const adminIds = [
-    process.env.NEXT_PUBLIC_ADMIN_USER_ID,
-    process.env.NEXT_PUBLIC_ADMIN_TEST_USER_ID,
-  ].filter(Boolean) as string[];
-
-  const userId = session?.user?.id;
-  const isAdmin = userId ? adminIds.includes(userId) : false;
+  const isAdmin = session?.user?.role === "ADMIN";
 
   const closeSidebar = () => setOpen(false);
 
@@ -68,7 +62,12 @@ export default function MobileSidebar() {
 
             <nav className="flex flex-col gap-1">
               {links.map((link) => {
-                if (link.href === "/admin/sales" && !isAdmin) return null;
+                if (
+                  (link.href.startsWith("/admin")) &&
+                  !isAdmin
+                ) {
+                  return null;
+                }
                 const isActivePage = pathname === link.href;
                 const variant = isActivePage ? "default" : "ghost";
                 return (
@@ -102,7 +101,7 @@ export default function MobileSidebar() {
                     onClick={closeSidebar}
                     className="w-full"
                   >
-                    <Link href="/api/auth/signin">Login</Link>
+                    <Link href="/sign-in">Login</Link>
                   </Button>
                   <Button
                     asChild

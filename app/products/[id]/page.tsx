@@ -15,15 +15,14 @@ async function SingleProductPage({ params }: { params: { id: string } }) {
   const { name, image, company, description, price } = product;
   const dollarsAmount = formatCurrency(price);
   const session = await auth();
-  const userId = session?.user?.id;
   const reviewDoesNotExist =
-    userId && !(await findExistingReview(userId, product.id));
+    session?.user?.id && !(await findExistingReview(product.id));
   return (
     <section>
       <BreadCrumbs name={product.name} />
       <div className="mt-6 grid gap-y-8 lg:grid-cols-2 lg:gap-x-16">
         {/* IMAGE FIRST COL */}
-        <div className="relative h-full">
+        <div className="relative h-72 sm:h-96 lg:h-[28rem]">
           <Image
             src={image}
             alt={name}

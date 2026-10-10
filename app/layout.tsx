@@ -8,14 +8,14 @@ import Providers from "./providers";
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  metadataBase: new URL("https://store-next-beta.vercel.app"),
+  metadataBase: new URL("https://shahleenstore.com"),
   title: {
     default:
-      "Next Store – Modern E-commerce Platform | Shop Online with Fast Checkout",
-    template: "%s | Next Store",
+      "Shahleen Store | Shop Online in Egypt",
+    template: "%s | Shahleen Store",
   },
   description:
-    "Next Store is a beautifully designed, high-performance e-commerce platform built with Next.js 14, TypeScript, and modern web technologies. Discover curated products, enjoy seamless shopping with fast checkout, secure Stripe payments, user reviews, favorites, and an intuitive admin dashboard. Experience the future of online shopping.",
+    "Shop curated products from Shahleen Store. Secure checkout is powered by Kashier, with delivery across Egypt.",
   keywords: [
     "e-commerce",
     "online store",
@@ -26,13 +26,12 @@ export const metadata: Metadata = {
     "store",
     "products",
     "checkout",
-    "stripe payments",
+    "Kashier payments",
     "modern e-commerce",
     "react",
     "prisma",
     "neon db",
     "vercel blob",
-    "clerk authentication",
     "shadcn ui",
     "dark mode",
     "responsive design",
@@ -44,12 +43,11 @@ export const metadata: Metadata = {
   ],
   authors: [
     {
-      name: "Mostafa Elgondy",
-      url: "https://mostafaelgondy-p01.web.app/",
+      name: "Shahleen Store",
     },
   ],
-  creator: "Mostafa Elgondy",
-  publisher: "Mostafa Elgondy",
+  creator: "Shahleen Store",
+  publisher: "Shahleen Store",
   formatDetection: {
     email: false,
     address: false,
@@ -66,30 +64,26 @@ export const metadata: Metadata = {
   openGraph: {
     type: "website",
     locale: "en_US",
-    url: "https://store-next-beta.vercel.app",
-    siteName: "Next Store",
+    url: "https://shahleenstore.com",
+    siteName: "Shahleen Store",
     title:
-      "Next Store – Modern E-commerce Platform | Shop Online with Fast Checkout",
-    description:
-      "Next Store is a beautifully designed, high-performance e-commerce platform built with Next.js 14. Discover curated products, enjoy seamless shopping with fast checkout, secure Stripe payments, user reviews, favorites, and an intuitive admin dashboard.",
+      "Shahleen Store | Shop Online in Egypt",
+    description: "Shop curated products from Shahleen Store with Kashier checkout.",
     images: [
       {
         url: "/logo.png",
         width: 512,
         height: 512,
-        alt: "Next Store Logo - Modern E-commerce Platform",
+        alt: "Shahleen Store logo",
         type: "image/png",
       },
     ],
   },
   twitter: {
     card: "summary_large_image",
-    title: "Next Store – Modern E-commerce Platform | Shop Online",
-    description:
-      "Beautifully designed, high-performance e-commerce platform with fast checkout, secure payments, product reviews, favorites, and admin dashboard. Built with Next.js 14 and modern web technologies.",
+    title: "Shahleen Store | Shop Online in Egypt",
+    description: "Shop curated products from Shahleen Store with Kashier checkout.",
     images: ["/logo.png"],
-    creator: "@mostafa_elgondy",
-    site: "@mostafa_elgondy",
   },
   robots: {
     index: true,
@@ -110,10 +104,10 @@ export const metadata: Metadata = {
   },
   category: "e-commerce",
   classification: "E-commerce Platform",
-  applicationName: "Next Store",
+  applicationName: "Shahleen Store",
   referrer: "origin-when-cross-origin",
   alternates: {
-    canonical: "https://store-next-beta.vercel.app",
+    canonical: "https://shahleenstore.com",
   },
 };
 

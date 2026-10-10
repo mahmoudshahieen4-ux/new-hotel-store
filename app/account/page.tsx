@@ -36,7 +36,7 @@ export default async function AccountPage() {
 
   // The account page is only available to signed-in users.
   if (!session?.user) {
-    redirect("/sign-in?redirect_url=/account");
+    redirect("/sign-in?callbackUrl=/account");
   }
 
   const user = session.user;

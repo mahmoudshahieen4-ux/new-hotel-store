@@ -1,3 +1,4 @@
+import Image from "next/image";
 import {
   Table,
   TableBody,
@@ -10,17 +11,21 @@ import {
 
 import { fetchAdminOrders } from '@/utils/actions';
 import { formatCurrency, formatDate } from '@/utils/format';
+import PaginationContainer from '@/components/global/PaginationContainer';
 
-async function SalesPage() {
-  const orders = await fetchAdminOrders();
+async function SalesPage({ searchParams }: { searchParams?: { page?: string } }) {
+  const page = Math.max(1, Number(searchParams?.page) || 1);
+  const { orders, total, totalPages } = await fetchAdminOrders(page);
 
   return (
+    <>
     <Table>
-      <TableCaption>Total Orders : {orders.length}</TableCaption>
+      <TableCaption>Total Orders : {total}</TableCaption>
       <TableHeader>
         <TableRow>
-          <TableHead>Email</TableHead>
-          <TableHead>Products</TableHead>
+          <TableHead>Customer</TableHead>
+          <TableHead>Order Items</TableHead>
+          <TableHead>Shipping Address</TableHead>
           <TableHead>Order Total</TableHead>
           <TableHead>Tax</TableHead>
           <TableHead>Shipping</TableHead>
@@ -29,12 +34,60 @@ async function SalesPage() {
       </TableHeader>
       <TableBody>
         {orders.map((order) => {
-          const { products, orderTotal, tax, shipping, createdAt, email } =
-            order;
+          const {
+            orderTotal,
+            tax,
+            shipping,
+            createdAt,
+            email,
+            orderItems,
+            shippingName,
+            shippingPhone,
+            shippingAddress,
+            city,
+          } = order;
+
           return (
             <TableRow key={order.id}>
-              <TableCell>{email}</TableCell>
-              <TableCell>{products}</TableCell>
+              <TableCell>
+                <div className="text-xs">
+                  <p className="font-medium">{shippingName || email}</p>
+                  <p className="text-muted-foreground">{email}</p>
+                  {shippingPhone && <p className="text-muted-foreground">{shippingPhone}</p>}
+                </div>
+              </TableCell>
+              <TableCell>
+                <div className="space-y-1 py-1">
+                  {orderItems && orderItems.length > 0 ? (
+                    orderItems.map((item) => (
+                      <div key={item.id} className="flex items-center gap-2">
+                        {item.image && (
+                          <Image
+                            src={item.image}
+                            alt={item.name}
+                            width={32}
+                            height={32}
+                            className="w-8 h-8 object-cover rounded"
+                          />
+                        )}
+                        <div className="text-xs">
+                          <p className="font-medium">{item.name}</p>
+                          <p className="text-muted-foreground">
+                            {item.amount} x {formatCurrency(item.price)}
+                          </p>
+                        </div>
+                      </div>
+                    ))
+                  ) : (
+                    <span className="text-xs text-muted-foreground">{order.products} items</span>
+                  )}
+                </div>
+              </TableCell>
+              <TableCell>
+                <div className="text-xs text-muted-foreground">
+                  {(shippingAddress || city) ? `${shippingAddress}, ${city}` : "N/A"}
+                </div>
+              </TableCell>
               <TableCell>{formatCurrency(orderTotal)}</TableCell>
               <TableCell>{formatCurrency(tax)}</TableCell>
               <TableCell>{formatCurrency(shipping)}</TableCell>
@@ -44,6 +97,8 @@ async function SalesPage() {
         })}
       </TableBody>
     </Table>
+    <PaginationContainer currentPage={page} totalPages={totalPages} />
+    </>
   );
 }
 export default SalesPage;

@@ -7,7 +7,10 @@ export const uploadImage = async (image: File) => {
   }
 
   const timestamp = Date.now();
-  const newName = `${timestamp}-${image.name}`;
+  const sanitizedName = (image.name || "image")
+    .replace(/[^a-zA-Z0-9.-]/g, "_")
+    .toLowerCase();
+  const newName = `${timestamp}-${sanitizedName}`;
 
   const blob = await put(newName, image, {
     access: "public",
@@ -24,12 +27,8 @@ export const deleteImage = async (url: string) => {
     throw new Error("Missing BLOB_READ_WRITE_TOKEN environment variable.");
   }
   try {
-    // Extract the blob path from the URL
-    // Vercel Blob URLs format: https://[hash].public.blob.vercel-storage.com/[filename]
     const urlObj = new URL(url);
     const pathname = urlObj.pathname;
-
-    // Remove leading slash to get the blob path
     const blobPath = pathname.startsWith("/") ? pathname.slice(1) : pathname;
 
     await del(blobPath, {
@@ -37,6 +36,5 @@ export const deleteImage = async (url: string) => {
     });
   } catch (error) {
     console.error("Error deleting image:", error);
-    // Don't throw error to prevent breaking the flow if image deletion fails
   }
 };

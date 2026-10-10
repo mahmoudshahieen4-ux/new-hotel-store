@@ -2,6 +2,7 @@ import {
   fetchAdminProductDetails,
   updateProductAction,
   updateProductImageAction,
+  requireAdminUser,
 } from '@/utils/actions';
 import FormContainer from '@/components/form/FormContainer';
 import FormInput from '@/components/form/FormInput';
@@ -12,6 +13,7 @@ import CheckboxInput from '@/components/form/CheckboxInput';
 import ImageInputContainer from '@/components/form/ImageInputContainer';
 
 async function EditProductPage({ params }: { params: { id: string } }) {
+  await requireAdminUser();
   const { id } = params;
   const product = await fetchAdminProductDetails(id);
   const { name, company, description, featured, price } = product;
@@ -26,7 +28,6 @@ async function EditProductPage({ params }: { params: { id: string } }) {
           text='update image'
         >
           <input type='hidden' name='id' value={id} />
-          <input type='hidden' name='url' value={product.image} />
         </ImageInputContainer>
         <FormContainer action={updateProductAction}>
           <div className='grid gap-4 md:grid-cols-2 my-4'>

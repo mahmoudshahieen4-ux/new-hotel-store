@@ -29,6 +29,7 @@ Prisma names every migration `YYYYMMDDHHMMSS_some_description`:
 | `20260813042251_add_nextauth_models` | Initial schema + NextAuth models (User, Account, Session, VerificationToken, Authenticator) and the app models (Product, Favorite, Review, Cart, CartItem, Order). |
 | `20260817090000_add_user_role_and_password` | Adds `role` (`USER`/`ADMIN` enum) and `password` to `User` — powers email/password sign-up and role-based access to the admin dashboard. |
 | `20260817120000_add_order_payment_ref` | Adds `Order.paymentOrderId` — a short unique reference used by the Kashier payment-gateway callback to map back to the order. |
+| `20261008120000_harden_store_checkout` | Adds order shipping details and line items, required indexes and uniqueness constraints; merges existing duplicate carts/cart items and removes duplicate favorites/reviews first. |
 
 ## Useful commands
 

@@ -40,7 +40,10 @@ export default function LinksDropdown() {
               <Image
                 src={session.user.image}
                 alt="Profile"
+                width={40}
+                height={40}
                 className="w-full h-full object-cover"
+                referrerPolicy="no-referrer"
               />
             ) : (
               <LuUser className="w-5 h-5" />

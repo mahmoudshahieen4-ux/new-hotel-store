@@ -7,7 +7,7 @@ import FavoriteToggleButton from './FavoriteToggleButton';
 function ProductsGrid({ products }: { products: Product[] }) {
   return (
     <div className='pt-12 grid gap-4 md:grid-cols-2 lg:grid-cols-3'>
-      {products.map((product) => {
+      {products.map((product, index) => {
         const { name, price, image } = product;
         const productId = product.id;
         const dollarsAmount = formatCurrency(price);
@@ -23,7 +23,7 @@ function ProductsGrid({ products }: { products: Product[] }) {
                       alt={name}
                       fill
                       sizes='(max-width:768px) 100vw,(max-width:1200px) 50vw, 33vw '
-                      priority
+                      priority={index === 0}
                       className='rounded w-full object-cover transform group-hover:scale-110 transition-transform duration-500'
                     />
                   </div>
@@ -36,7 +36,7 @@ function ProductsGrid({ products }: { products: Product[] }) {
                 </CardContent>
               </Card>
             </Link>
-            <div className='absolute top-7 right-7 z-5'>
+            <div className='absolute top-7 right-7 z-10'>
               <FavoriteToggleButton productId={productId} />
             </div>
           </article>

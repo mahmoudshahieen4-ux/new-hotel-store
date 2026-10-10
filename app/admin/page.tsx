@@ -10,6 +10,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { fetchAdminOrders, fetchAdminProducts } from "@/utils/actions";
+import { requireAdminUser } from "@/utils/actions";
 import { formatCurrency } from "@/utils/format";
 import {
   LuPackage,
@@ -34,10 +35,10 @@ export default async function AdminDashboardPage() {
 
   // Defense in depth: the middleware already guards /admin, but we double check
   // here so a non-admin who somehow reaches this page is still bounced home.
-  if (!session?.user) redirect("/sign-in?redirect_url=/admin");
-  if (session.user.role !== "ADMIN") redirect("/");
+  if (!session?.user) redirect("/sign-in?callbackUrl=/admin");
+  await requireAdminUser();
 
-  const [products, orders] = await Promise.all([
+  const [productPage, orderPage] = await Promise.all([
     fetchAdminProducts(),
     fetchAdminOrders(),
   ]);
@@ -45,17 +46,17 @@ export default async function AdminDashboardPage() {
   const stats = [
     {
       label: "Total Products",
-      value: products.length.toString(),
+      value: productPage.total.toString(),
       icon: LuPackage,
     },
     {
       label: "Total Orders",
-      value: orders.length.toString(),
+      value: orderPage.total.toString(),
       icon: LuShoppingCart,
     },
     {
       label: "Total Revenue",
-      value: formatCurrency(orders.reduce((sum, o) => sum + o.orderTotal, 0)),
+      value: formatCurrency(orderPage.revenue),
       icon: LuDollarSign,
     },
   ];
