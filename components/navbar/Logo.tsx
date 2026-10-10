@@ -9,7 +9,7 @@ function Logo() {
     >
       <Image
         src="/logo.png"
-        alt="Shahleen Store"
+        alt="hotel Store"
         width={32}
         height={32}
         className="shrink-0"
