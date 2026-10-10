@@ -16,7 +16,7 @@ function Logo() {
         unoptimized
       />
       <span className="hidden sm:block font-bold text-lg bg-gradient-to-r from-primary via-blue-600 to-blue-700 dark:from-primary dark:via-blue-400 dark:to-blue-500 bg-clip-text text-transparent">
-        Shahleen Store
+        Hotel site
       </span>
     </Link>
   );

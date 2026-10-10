@@ -11,11 +11,10 @@ function Hero() {
 
       <div className="order-2 md:order-1 flex flex-col items-start gap-4">
         <h1 className="max-w-2xl text-4xl font-bold tracking-tight sm:text-6xl">
-          Curated home essentials, delivered across Egypt
+          your first hotel managment system  website choice
         </h1>
         <p className="mt-2 max-w-xl text-lg leading-8 text-muted-foreground">
-          Shop featured furniture and everyday pieces from Shahleen Store, with
-          secure Kashier checkout and fast delivery to your door.
+          a hotel managment store ready for your decision
         </p>
         <Button asChild size="lg" className="mt-4">
           <Link href="/products">Our Products</Link>
